@@ -14,7 +14,9 @@ const ChatView = ({ chat, onBack }) => {
     deleteContact,
     deleteGroup,
     updateChatBackground,
-    getSender
+    getSender,
+    theme,
+    toggleTheme
   } = useChat();
 
   const [isEditModalOpen, setEditModalOpen] = useState(false);
@@ -25,10 +27,35 @@ const ChatView = ({ chat, onBack }) => {
   const [isMenuOpen, setMenuOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [currentSender, setCurrentSender] = useState('me');
+  const [defaultBgDataUrl, setDefaultBgDataUrl] = useState('');
+
+  const DEFAULT_BG_URL = 'https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png';
+
+  useEffect(() => {
+    const toDataURL = async (url) => {
+      try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch (error) {
+        console.error('Failed to convert image to data URL:', error);
+        return url;
+      }
+    };
+    
+    if (!chatBackgrounds[chat.id]) {
+        toDataURL(DEFAULT_BG_URL).then(dataUrl => setDefaultBgDataUrl(dataUrl));
+    }
+  }, [chat.id, chatBackgrounds]);
 
   const conversation = conversations[chat.id] || [];
   const isGroupChat = !!chat.isGroup;
-  const chatBackground = chatBackgrounds[chat.id] || 'https://i.pinimg.com/736x/8c/98/99/8c98994518b575bfd8c949e91d20548b.jpg';
+  const chatBackground = chatBackgrounds[chat.id] || defaultBgDataUrl || DEFAULT_BG_URL;
 
   const handleSaveContact = (updatedContact) => {
     updateContact(updatedContact);
@@ -74,7 +101,11 @@ const ChatView = ({ chat, onBack }) => {
         setIsExporting(false);
         return;
       }
-      htmlToImage.toPng(chatContainerRef.current, { cacheBust: true, backgroundColor: '#121212' })
+      const element = chatContainerRef.current;
+      htmlToImage.toPng(element, {
+        width: element.clientWidth,
+        height: element.clientHeight,
+      })
         .then((dataUrl) => {
           const link = document.createElement('a');
           link.download = `${chat.name}-chat.png`;
@@ -120,7 +151,7 @@ const ChatView = ({ chat, onBack }) => {
 
   return (
     <>
-      <div className="flex flex-col bg-white dark:bg-gray-800 rounded-lg mx-auto overflow-hidden" style={{height: '812px', width: '375px'}} ref={chatContainerRef}>
+      <div className="flex flex-col bg-white dark:bg-gray-800 rounded-lg overflow-hidden" style={{height: '812px', width: '375px'}} ref={chatContainerRef}>
         {/* Chat Header */}
         {isExporting ? (
           <header className="flex items-center p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 rounded-t-lg flex-shrink-0">
@@ -165,6 +196,7 @@ const ChatView = ({ chat, onBack }) => {
                   <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10">
                     <button onClick={handleExport} className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Export Chat</button>
                     <button onClick={handleChangeBackground} className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Change Background</button>
+                    <button onClick={toggleTheme} className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Toggle Theme</button>
                     <button onClick={handleDelete} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700">Delete {isGroupChat ? 'Group' : 'Chat'}</button>
                   </div>
                 )}

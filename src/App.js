@@ -25,7 +25,7 @@ function App() {
 
   return (
     <div className="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white min-h-screen flex justify-center items-center p-4">
-      <div className="w-full max-w-md mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+      <div className={`w-full max-w-md mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden ${activeChat ? 'flex justify-center' : ''}`}>
         {activeChat ? (
           <ChatView chat={activeChat} conversation={activeConversation} onBack={() => setActiveChat(null)} />
         ) : (
