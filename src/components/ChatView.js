@@ -1,337 +1,120 @@
 import React, { useState, useEffect, useRef } from 'react';
-import EditContactModal from './EditContactModal';
 import * as htmlToImage from 'html-to-image';
 import { useChat } from '../context/ChatProvider';
+import EditContactModal from './EditContactModal';
 
-const ChatView = ({ chat, onBack }) => {
-  const {
-    contacts,
-    conversations,
-    chatBackgrounds,
-    sendMessage,
-    updateMessageTimestamp,
-    updateContact,
-    deleteContact,
-    deleteGroup,
-    updateChatBackground,
-    getSender,
-    theme,
-    toggleTheme
-  } = useChat();
-
-  const [isEditModalOpen, setEditModalOpen] = useState(false);
-  const chatContainerRef = useRef(null);
-  const messagesEndRef = useRef(null);
-  const backgroundInputRef = useRef(null);
-  const [isExporting, setIsExporting] = useState(false);
-  const [isMenuOpen, setMenuOpen] = useState(false);
+const ChatView = ({ chat, conversation, onBack }) => {
+  const { sendMessage, getSender, updateContact } = useChat();
   const [message, setMessage] = useState('');
-  const [currentSender, setCurrentSender] = useState('me');
-  const [defaultBgDataUrl, setDefaultBgDataUrl] = useState('');
-  const [isBgLoaded, setIsBgLoaded] = useState(false);
+  const [currentSenderId, setCurrentSenderId] = useState('me');
+  const [isMenuOpen, setMenuOpen] = useState(false);
+  const [isEditModalOpen, setEditModalOpen] = useState(false);
+  const messagesEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
 
-  const DEFAULT_BG_URL = 'https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png';
+  const participants = [
+    { id: 'me', name: 'Me', profilePicture: 'https://i.pravatar.cc/150?u=me' },
+    ...(chat.isGroup ? chat.members.map(getSender).filter(Boolean) : [chat])
+  ];
 
   useEffect(() => {
-    const toDataURL = async (url) => {
-      try {
-        const response = await fetch(url);
-        const blob = await response.blob();
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        });
-      } catch (error) {
-        console.error('Failed to convert image to data URL:', error);
-        return url;
-      }
-    };
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [conversation]);
 
-    if (chatBackgrounds[chat.id]) {
-      setIsBgLoaded(true);
-    } else {
-      setIsBgLoaded(false);
-      toDataURL(DEFAULT_BG_URL).then(dataUrl => {
-        setDefaultBgDataUrl(dataUrl);
-        setIsBgLoaded(true);
-      });
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (message.trim()) {
+      sendMessage(chat.id, message, currentSenderId);
+      setMessage('');
     }
-  }, [chat.id, chatBackgrounds]);
+  };
 
-  const conversation = conversations[chat.id] || [];
-  const isGroupChat = !!chat.isGroup;
-  const chatBackground = chatBackgrounds[chat.id] || defaultBgDataUrl || DEFAULT_BG_URL;
+  const handleExport = () => {
+    setMenuOpen(false);
+    if (chatContainerRef.current === null) return;
+    htmlToImage.toPng(chatContainerRef.current)
+      .then((dataUrl) => {
+        const link = document.createElement('a');
+        link.download = `${chat.name}-chat.png`;
+        link.href = dataUrl;
+        link.click();
+      })
+      .catch((err) => console.error('Oops, something went wrong!', err));
+  };
 
   const handleSaveContact = (updatedContact) => {
     updateContact(updatedContact);
     setEditModalOpen(false);
   };
 
-  const handleDelete = () => {
-    if (window.confirm(`Are you sure you want to delete this ${isGroupChat ? 'group' : 'chat'}? This action cannot be undone.`)) {
-      if (isGroupChat) {
-        deleteGroup(chat.id);
-      } else {
-        deleteContact(chat.id);
-      }
-      onBack();
-    }
-  };
-
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    if (message.trim()) {
-      sendMessage(chat.id, message, currentSender);
-      setMessage('');
-    }
-  };
-
-  const getSenderName = (senderId) => {
-    const sender = getSender(senderId);
-    return sender ? sender.name.split(' ')[0] : 'Unknown';
-  };
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [conversation]);
-
-  const handleExport = () => {
-    setMenuOpen(false);
-    setIsExporting(true);
-  };
-
-  useEffect(() => {
-    if (isExporting) {
-      if (chatContainerRef.current === null) {
-        setIsExporting(false);
-        return;
-      }
-      const element = chatContainerRef.current;
-      htmlToImage.toPng(element, {
-        width: element.clientWidth,
-        height: element.clientHeight,
-      })
-        .then((dataUrl) => {
-          const link = document.createElement('a');
-          link.download = `${chat.name}-chat.png`;
-          link.href = dataUrl;
-          link.click();
-        })
-        .catch((err) => console.error('Oops, something went wrong!', err))
-        .finally(() => {
-          setIsExporting(false);
-        });
-    }
-  }, [isExporting, chat.name]);
-
-  const handleTimestampEdit = (msg) => {
-    const newTime = prompt('Enter new time (HH:MM):', new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }));
-    if (newTime) {
-      const [hours, minutes] = newTime.split(':');
-      if (!isNaN(hours) && !isNaN(minutes)) {
-        const newTimestamp = new Date(msg.timestamp);
-        newTimestamp.setHours(parseInt(hours, 10), parseInt(minutes, 10));
-        updateMessageTimestamp(chat.id, msg.id, newTimestamp.toISOString());
-      }
-    }
-  };
-
-  const handleChangeBackground = () => {
-    backgroundInputRef.current.click();
-  };
-
-  const handleBackgroundChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        updateChatBackground(chat.id, reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-    setMenuOpen(false);
-  };
-
-  if (!chat) return null;
+  const ActionMenu = () => (
+    <div className="relative">
+      <button onClick={() => setMenuOpen(!isMenuOpen)} aria-label="Open menu" className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-light dark:focus-visible:ring-accent-dark">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-secondary-text-light dark:text-secondary-text-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 5v.01M12 12v.01M12 19v.01" /></svg>
+      </button>
+      {isMenuOpen && (
+        <div className="absolute right-0 mt-2 w-48 bg-secondary-bg-light dark:bg-secondary-bg-dark rounded-md shadow-lg py-1 z-20 ring-1 ring-black ring-opacity-5 focus:outline-none">
+          <button onClick={handleExport} className="block w-full text-left px-4 py-2 text-sm text-primary-text-light dark:text-primary-text-dark hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-800">Export as PNG</button>
+          {!chat.isGroup && <button onClick={() => { setEditModalOpen(true); setMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-primary-text-light dark:text-primary-text-dark hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-800">Edit Contact</button>}
+        </div>
+      )}
+    </div>
+  );
 
   return (
-    <>
-      <div className="flex flex-col bg-white dark:bg-gray-800 rounded-lg overflow-hidden" style={{height: '812px', width: '375px'}} ref={chatContainerRef}>
-        {/* Chat Header */}
-        {isExporting ? (
-          <header className="flex items-center p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 rounded-t-lg flex-shrink-0">
-            <img src={chat.profilePicture || chat.groupIcon} alt={chat.name} className="w-10 h-10 rounded-full mr-3" />
-            <div className="flex-grow">
-              <h2 className="font-semibold text-lg text-gray-900 dark:text-white">{chat.name}</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{isGroupChat ? `${chat.members.length} members` : (chat.status || 'online')}</p>
-            </div>
-            <div className="ml-auto flex items-center space-x-4 text-gray-800 dark:text-white">
-              <div className="flex items-center space-x-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.55a1 1 0 011.45.89v2.22a1 1 0 01-1.45.89L15 12.22V10zM4 6a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" /></svg>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498A1 1 0 0119 15.72V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
-              </div>
-            </div>
-          </header>
-        ) : (
-          <header className="flex items-center p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 rounded-t-lg flex-shrink-0">
-            <button onClick={onBack} className="mr-4 text-gray-800 dark:text-white hover:text-green-500 dark:hover:text-green-400 transition">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-            </button>
-            <img src={chat.profilePicture || chat.groupIcon} alt={chat.name} className="w-10 h-10 rounded-full mr-3" />
-            <div className="flex-grow">
-              <h2 className="font-semibold text-lg text-gray-900 dark:text-white">{chat.name}</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{isGroupChat ? `${chat.members.length} members` : (chat.status || 'online')}</p>
-            </div>
-            <div className="ml-auto flex items-center space-x-2 text-gray-800 dark:text-white">
-              <button className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.55a1 1 0 011.45.89v2.22a1 1 0 01-1.45.89L15 12.22V10zM4 6a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" /></svg>
-              </button>
-              <button className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498A1 1 0 0119 15.72V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-              </button>
-              <div className="relative">
-                <button onClick={() => setMenuOpen(!isMenuOpen)} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
-                </button>
-                {isMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 ring-1 ring-black ring-opacity-5">
-                    <div className="py-1">
-                      {!isGroupChat && (
-                        <button onClick={() => { setEditModalOpen(true); setMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                          Edit Contact
-                        </button>
-                      )}
-                      <button onClick={() => { handleChangeBackground(); setMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                        Change Background
-                      </button>
-                      <button
-                        onClick={() => { handleExport(); setMenuOpen(false); }}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={!isBgLoaded}
-                      >
-                        Export Chat
-                      </button>
-                      <button onClick={() => { toggleTheme(); setMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                        Toggle Dark Mode
-                      </button>
-                      <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                      <button onClick={() => { handleDelete(); setMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700">
-                        Delete {isGroupChat ? 'Group' : 'Chat'}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <input type="file" ref={backgroundInputRef} onChange={handleBackgroundChange} className="hidden" accept="image/*" />
-            </div>
-          </header>
-        )}
-
-        {/* Messages Area */}
-        <div className="flex-grow flex flex-col" style={{ backgroundImage: `url(${chatBackground})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
-          <div className="flex-grow p-4 overflow-y-auto">
-            <div className="flex flex-col space-y-2">
-              {conversation.map(msg => {
-                const sender = msg.sender === 'me' ? null : getSender(msg.sender);
-                const senderProfilePicture = sender ? sender.profilePicture : null;
-                
-                return (
-                  <div key={msg.id} className={`flex items-end ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
-                    {msg.sender !== 'me' && senderProfilePicture && (
-                      <img src={senderProfilePicture} alt={sender.name} className="w-6 h-6 rounded-full mr-2" />
-                    )}
-                    <div className={`px-4 py-2 rounded-lg max-w-xs lg:max-w-md ${msg.sender === 'me' ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-900 dark:text-white'}`}>
-                      {isGroupChat && msg.sender !== 'me' && (
-                        <p className="font-bold text-sm text-teal-500 dark:text-green-300">{getSenderName(msg.sender)}</p>
-                      )}
-                      <p className="text-gray-900 dark:text-white">{msg.text}</p>
-                      <p 
-                        onClick={() => handleTimestampEdit(msg)}
-                        className="text-xs text-gray-500 dark:text-gray-400 text-right mt-1 cursor-pointer hover:text-black dark:hover:text-white transition"
-                      >
-                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-              <div ref={messagesEndRef} />
-            </div>
-          </div>
+    <div className="flex flex-col h-full bg-primary-bg-light dark:bg-primary-bg-dark">
+      {/* Header */}
+      <header className="flex-shrink-0 flex items-center p-4 border-b border-gray-200 dark:border-gray-700">
+        <button onClick={onBack} aria-label="Back to chat list" className="md:hidden p-2 mr-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-light dark:focus-visible:ring-accent-dark">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-secondary-text-light dark:text-secondary-text-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+        </button>
+        <img src={chat.profilePicture || chat.groupIcon} alt={chat.name} className="w-10 h-10 rounded-full mr-4" />
+        <div className="flex-grow">
+          <h2 className="text-lg font-semibold text-primary-text-light dark:text-primary-text-dark">{chat.name}</h2>
+          <p className="text-sm text-secondary-text-light dark:text-secondary-text-dark">online</p>
         </div>
+        <div className="flex items-center space-x-2">
+          <button aria-label="Start video call" className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-light dark:focus-visible:ring-accent-dark"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-secondary-text-light dark:text-secondary-text-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></button>
+          <button aria-label="Start audio call" className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-light dark:focus-visible:ring-accent-dark"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-secondary-text-light dark:text-secondary-text-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg></button>
+          <ActionMenu />
+        </div>
+      </header>
 
-        {/* Message Input */}
-        {isExporting ? (
-          <footer className="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 rounded-b-lg flex-shrink-0">
-            <div className="flex items-center space-x-2">
-              <div className="flex-grow flex items-center bg-white dark:bg-gray-600 rounded-full py-2 px-4">
-                <button type="button" className="text-gray-500 dark:text-gray-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                </button>
-                <p className="text-gray-500 dark:text-gray-400 ml-2">Type a message</p>
-                <button type="button" className="ml-auto text-gray-500 dark:text-gray-400">
-                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 transform -rotate-45" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
-                </button>
+      {/* Message Area */}
+      <div ref={chatContainerRef} className="flex-grow p-4 overflow-y-auto bg-secondary-bg-light dark:bg-secondary-bg-dark">
+        <div className="space-y-4">
+          {conversation.map(msg => (
+            <div key={msg.id} className={`flex items-end gap-2 ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-md px-4 py-2 rounded-2xl ${msg.sender === 'me' ? 'bg-my-message-bg-light text-my-message-text-light dark:bg-my-message-bg-dark dark:text-my-message-text-dark' : 'bg-their-message-bg-light text-their-message-text-light dark:bg-their-message-bg-dark dark:text-their-message-text-dark'}`}>
+                <p>{msg.text}</p>
+                <p className="text-xs text-right mt-1 opacity-75">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
               </div>
-              <button type="button" className="bg-green-500 rounded-full p-2">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
-              </button>
             </div>
-          </footer>
-        ) : (
-          <footer className="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 rounded-b-lg flex-shrink-0">
-            <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
-              <select
-                value={currentSender}
-                onChange={(e) => setCurrentSender(e.target.value)}
-                className="p-2 bg-gray-200 dark:bg-gray-700 rounded-full text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer"
-              >
-                <option value="me">Me</option>
-                {isGroupChat
-                  ? chat.members.map(memberId => {
-                    const member = getSender(memberId);
-                    return member ? <option key={member.id} value={member.id}>{member.name.split(' ')[0]}</option> : null;
-                  })
-                  : <option value={chat.id}>{chat.name.split(' ')[0]}</option>
-                }
-              </select>
-              <div className="flex-grow flex items-center relative">
-                <input
-                  type="text"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Type a message"
-                  className="w-full bg-gray-200 dark:bg-gray-600 rounded-full py-2 pl-10 pr-10 text-gray-900 dark:text-white focus:outline-none"
-                />
-                <button type="button" className="absolute left-3 text-gray-500 dark:text-gray-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                </button>
-                <button type="button" className="absolute right-3 text-gray-500 dark:text-gray-400">
-                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 transform -rotate-45" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
-                </button>
-              </div>
-              <button type="submit" className="bg-green-500 rounded-full p-2 hover:bg-green-600 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
-              </button>
-            </form>
-          </footer>
-        )}
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
       </div>
 
-      {!isGroupChat && (
-        <EditContactModal 
-          isOpen={isEditModalOpen}
-          onClose={() => setEditModalOpen(false)}
-          contact={chat}
-          onSave={handleSaveContact}
-        />
+      {/* Message Composer */}
+      <footer className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700">
+        <form onSubmit={handleSendMessage} className="flex items-center space-x-3">
+          <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Type a message..." className="w-full bg-gray-100 dark:bg-gray-800 rounded-full py-2 px-4 focus:outline-none focus:ring-2 focus:ring-accent-light dark:focus:ring-accent-dark" />
+          <button type="submit" aria-label="Send message" className="p-2 rounded-full bg-accent-light dark:bg-accent-dark text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent-light dark:focus-visible:ring-accent-dark"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg></button>
+        </form>
+        <div className="flex items-center mt-3 space-x-2">
+          <span className="text-sm text-secondary-text-light dark:text-secondary-text-dark">Send as:</span>
+          {participants.map(p => (
+            <button key={p.id} onClick={() => setCurrentSenderId(p.id)} aria-label={`Send as ${p.name}`} className={`flex items-center p-1 rounded-full transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent-light dark:focus-visible:ring-accent-dark ${currentSenderId === p.id ? 'ring-2 ring-accent-light dark:ring-accent-dark' : ''}`}>
+              <img src={p.profilePicture} alt={p.name} className="w-8 h-8 rounded-full" />
+            </button>
+          ))}
+        </div>
+      </footer>
+
+      {!chat.isGroup && (
+        <EditContactModal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} contact={chat} onSave={handleSaveContact} />
       )}
-    </>
+    </div>
   );
 };
 
