@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/chatterbox_mocker/static/css/main.2805cd48.css",
-    "main.js": "/chatterbox_mocker/static/js/main.d0959a98.js",
+    "main.css": "/chatterbox_mocker/static/css/main.573e1f13.css",
+    "main.js": "/chatterbox_mocker/static/js/main.b95c7f28.js",
     "static/js/453.37af1b6e.chunk.js": "/chatterbox_mocker/static/js/453.37af1b6e.chunk.js",
     "index.html": "/chatterbox_mocker/index.html",
-    "main.2805cd48.css.map": "/chatterbox_mocker/static/css/main.2805cd48.css.map",
-    "main.d0959a98.js.map": "/chatterbox_mocker/static/js/main.d0959a98.js.map",
+    "main.573e1f13.css.map": "/chatterbox_mocker/static/css/main.573e1f13.css.map",
+    "main.b95c7f28.js.map": "/chatterbox_mocker/static/js/main.b95c7f28.js.map",
     "453.37af1b6e.chunk.js.map": "/chatterbox_mocker/static/js/453.37af1b6e.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.2805cd48.css",
-    "static/js/main.d0959a98.js"
+    "static/css/main.573e1f13.css",
+    "static/js/main.b95c7f28.js"
   ]
 }
