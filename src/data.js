@@ -17,16 +17,7 @@ export const initialData = {
       phoneNumber: '+1 987-654-3210',
     },
   ],
-  groups: [
-    {
-      id: 'group-1',
-      name: 'Project Team',
-      groupIcon: 'https://robohash.org/project_team.png?size=150x150',
-      description: 'Discussion about the new project.',
-      creationDate: '2025-06-15T10:00:00Z',
-      members: ['contact-1', 'contact-2'], // IDs of contacts
-    },
-  ],
+  groups: [],
   conversations: {
     'contact-1': [
       {
@@ -42,19 +33,6 @@ export const initialData = {
         timestamp: '2025-06-15T10:06:00Z',
       },
     ],
-    'group-1': [
-      {
-        id: 'msg-3',
-        sender: 'contact-1',
-        text: 'Hello team, just a reminder about the meeting tomorrow.',
-        timestamp: '2025-06-15T11:00:00Z',
-      },
-      {
-        id: 'msg-4',
-        sender: 'me',
-        text: 'Thanks for the reminder, Jane!',
-        timestamp: '2025-06-15T11:01:00Z',
-      },
-    ],
+
   },
 };
