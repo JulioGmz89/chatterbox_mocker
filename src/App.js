@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import ChatList from './components/ChatList';
 import AddContactModal from './components/AddContactModal';
+import NewGroupModal from './components/NewGroupModal';
+import EditGroupModal from './components/EditGroupModal';
 import SettingsModal from './components/SettingsModal';
 import ChatView from './components/ChatView';
 import { useChat } from './context/ChatProvider';
@@ -8,12 +10,31 @@ import { useChat } from './context/ChatProvider';
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isNewGroupModalOpen, setIsNewGroupModalOpen] = useState(false);
+  const [isEditGroupModalOpen, setIsEditGroupModalOpen] = useState(false);
+  const [editingGroup, setEditingGroup] = useState(null);
   const [activeChat, setActiveChat] = useState(null);
-  const { addContact, conversations } = useChat();
+  const { addContact, addGroup, updateGroup, conversations } = useChat();
 
   const handleSaveContact = (newContact) => {
     addContact(newContact);
     setIsModalOpen(false);
+  };
+
+  const handleSaveGroup = (newGroup) => {
+    addGroup(newGroup);
+    setIsNewGroupModalOpen(false);
+  };
+
+  const handleOpenEditGroupModal = (group) => {
+    setEditingGroup(group);
+    setIsEditGroupModalOpen(true);
+  };
+
+  const handleUpdateGroup = (updatedGroup) => {
+    updateGroup(updatedGroup);
+    setIsEditGroupModalOpen(false);
+    setEditingGroup(null);
   };
   
   const activeConversation = activeChat ? conversations[activeChat.id] || [] : [];
@@ -29,6 +50,7 @@ function App() {
         <ChatList 
           onSelectChat={setActiveChat}
           onNewChat={() => setIsModalOpen(true)}
+          onNewGroup={() => setIsNewGroupModalOpen(true)}
           onOpenSettings={() => setIsSettingsModalOpen(true)}
           activeChatId={activeChat?.id}
         />
@@ -44,7 +66,8 @@ function App() {
           <ChatView 
             chat={activeChat} 
             conversation={activeConversation} 
-            onBack={() => setActiveChat(null)} 
+            onBack={() => setActiveChat(null)}
+            onEditGroup={handleOpenEditGroupModal} 
           />
         ) : (
           <div className="hidden md:flex flex-col items-center justify-center h-full text-center bg-primary-bg-light dark:bg-primary-bg-dark">
@@ -68,6 +91,19 @@ function App() {
       <SettingsModal 
         isOpen={isSettingsModalOpen} 
         onClose={() => setIsSettingsModalOpen(false)} 
+      />
+
+      <NewGroupModal
+        isOpen={isNewGroupModalOpen}
+        onClose={() => setIsNewGroupModalOpen(false)}
+        onSave={handleSaveGroup}
+      />
+
+      <EditGroupModal
+        isOpen={isEditGroupModalOpen}
+        onClose={() => setIsEditGroupModalOpen(false)}
+        group={editingGroup}
+        onSave={handleUpdateGroup}
       />
     </div>
   );
