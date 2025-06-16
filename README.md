@@ -1,10 +1,10 @@
-# Getting Started with Create React App
+# Chatterbox Mocker
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A realistic WhatsApp mock chat generator built with React and Tailwind CSS. Create and customize conversations, manage contacts, and export your chats as high-quality images.
 
-## Available Scripts
+**Live Demo:** [https://juliogmz89.github.io/chatterbox_mocker/](https://juliogmz89.github.io/chatterbox_mocker/)
 
-In the project directory, you can run:
+ <!-- You can replace this with a real screenshot -->
 
 ### `npm start`
 
