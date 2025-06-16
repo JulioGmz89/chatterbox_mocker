@@ -28,11 +28,13 @@ module.exports = {
         'secondary-text-dark': '#9CA3AF',
         'accent-dark': '#3B82F6',
         'destructive-dark': '#EF4444',
-        'my-message-bg-dark': '#1E40AF',
+        'my-message-bg-dark': '#056162',
+        'my-message-text-dark': '#FFFFFF',
+        'my-message-bg-light': '#DCF8C6',
+        'my-message-text-light': '#000000',
         'their-message-bg-dark': '#374151',
       }
     },
   },
   plugins: [],
 }
-

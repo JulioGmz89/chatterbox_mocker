@@ -35,7 +35,11 @@ function App() {
       </div>
 
       {/* Right Pane - Chat View */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className={ `
+        absolute top-0 left-0 w-full h-full md:static flex-1 flex flex-col min-w-0
+        transition-transform duration-300 ease-in-out
+        ${activeChat ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
+      `}>
         {activeChat ? (
           <ChatView 
             chat={activeChat} 
@@ -43,7 +47,7 @@ function App() {
             onBack={() => setActiveChat(null)} 
           />
         ) : (
-          <div className="hidden md:flex flex-col items-center justify-center h-full text-center">
+          <div className="hidden md:flex flex-col items-center justify-center h-full text-center bg-primary-bg-light dark:bg-primary-bg-dark">
             <h2 className="text-2xl font-semibold text-primary-text-light dark:text-primary-text-dark">
               Welcome to Chatterbox Mocker
             </h2>
