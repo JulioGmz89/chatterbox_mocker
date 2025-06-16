@@ -59,7 +59,7 @@ const ChatView = ({ chat, onBack }) => {
 
   const handleSaveContact = (updatedContact) => {
     updateContact(updatedContact);
-    setIsEditModalOpen(false);
+    setEditModalOpen(false);
   };
 
   const handleDelete = () => {
