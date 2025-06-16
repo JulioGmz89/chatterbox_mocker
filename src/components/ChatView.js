@@ -63,6 +63,31 @@ const ChatView = ({ chat, conversation, onBack, onEditGroup }) => {
     }
   };
 
+  const handleTimestampSave = (chatId, messageId, originalTimestamp, friendlyTime) => {
+    const timeParts = friendlyTime.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+    if (!timeParts) {
+        setEditingTimestamp(null); // Invalid format, cancel edit
+        return;
+    }
+
+    let hours = parseInt(timeParts[1], 10);
+    const minutes = parseInt(timeParts[2], 10);
+    const period = timeParts[3] ? timeParts[3].toUpperCase() : null;
+
+    if (period === 'PM' && hours < 12) {
+        hours += 12;
+    }
+    if (period === 'AM' && hours === 12) { // Midnight case: 12 AM -> 00 hours
+        hours = 0;
+    }
+
+    const newDate = new Date(originalTimestamp);
+    newDate.setHours(hours, minutes, 0, 0); // Set H, M, S, MS
+
+    updateMessageTimestamp(chatId, messageId, newDate.toISOString());
+    setEditingTimestamp(null);
+  };
+
   const exportChat = (asPhone = false) => {
     setMenuOpen(false);
     if (exportRef.current === null) return;
@@ -164,7 +189,7 @@ const ChatView = ({ chat, conversation, onBack, onEditGroup }) => {
   return (
     <div ref={exportRef} style={{ backgroundImage: `url(${chatBackground})`, backgroundSize: 'cover', backgroundPosition: 'center' }} className="flex flex-col h-full bg-primary-bg-light dark:bg-primary-bg-dark">
       {/* Header */}
-      <header className="flex-shrink-0 flex items-center p-4 border-b border-gray-200 dark:border-gray-700">
+      <header className="flex-shrink-0 flex items-center justify-between p-4 bg-primary-bg-light/80 dark:bg-primary-bg-dark/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700">
         <button onClick={onBack} aria-label="Back to chat list" className="md:hidden p-2 mr-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-light dark:focus-visible:ring-accent-dark">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-secondary-text-light dark:text-secondary-text-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
         </button>
@@ -208,14 +233,10 @@ const ChatView = ({ chat, conversation, onBack, onEditGroup }) => {
                       type="text"
                       value={newTimestamp}
                       onChange={(e) => setNewTimestamp(e.target.value)}
-                      onBlur={() => {
-                        updateMessageTimestamp(chat.id, msg.id, newTimestamp);
-                        setEditingTimestamp(null);
-                      }}
+                      onBlur={() => handleTimestampSave(chat.id, msg.id, msg.timestamp, newTimestamp)}
                       onKeyPress={(e) => {
                         if (e.key === 'Enter') {
-                          updateMessageTimestamp(chat.id, msg.id, newTimestamp);
-                          setEditingTimestamp(null);
+                          handleTimestampSave(chat.id, msg.id, msg.timestamp, newTimestamp);
                         }
                       }}
                       className="bg-transparent text-xs text-right w-full focus:outline-none focus:ring-1 focus:ring-accent-light rounded-sm"
@@ -223,19 +244,20 @@ const ChatView = ({ chat, conversation, onBack, onEditGroup }) => {
                     />
                   ) : (
                     <div className="flex items-center justify-end space-x-2 mt-1">
-                      <p className="text-xs opacity-75">
-                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                      <button
+                       <button
                         onClick={() => {
                           setEditingTimestamp(msg.id);
-                          setNewTimestamp(msg.timestamp);
+                          const friendlyTime = new Date(msg.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+                          setNewTimestamp(friendlyTime);
                         }}
                         className="hide-on-export opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
                         aria-label="Edit timestamp"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-secondary-text-light dark:text-secondary-text-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z" /></svg>
                       </button>
+                      <p className="text-xs opacity-75">
+                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -247,7 +269,7 @@ const ChatView = ({ chat, conversation, onBack, onEditGroup }) => {
       </div>
 
       {/* Message Composer */}
-      <footer className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700">
+      <footer className="flex-shrink-0 p-4 bg-primary-bg-light/80 dark:bg-primary-bg-dark/80 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700">
         <div className="flex items-center space-x-3">
           <form onSubmit={handleSendMessage} className="flex-grow flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 rounded-full px-2">
             <button type="button" aria-label="Emoji" className="p-2 rounded-full text-secondary-text-light dark:text-secondary-text-dark hover:bg-gray-200 dark:hover:bg-gray-700">
@@ -256,11 +278,11 @@ const ChatView = ({ chat, conversation, onBack, onEditGroup }) => {
             <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Type a message..." className="w-full bg-transparent py-2 focus:outline-none text-primary-text-light dark:text-primary-text-dark" />
           </form>
           {message.trim() ? (
-            <button onClick={handleSendMessage} aria-label="Send message" className="p-3 rounded-full bg-accent-light dark:bg-accent-dark text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent-light dark:focus-visible:ring-accent-dark">
+            <button onClick={handleSendMessage} aria-label="Send message" className="p-3 rounded-full bg-my-message-bg-light dark:bg-my-message-bg-dark text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent-light dark:focus-visible:ring-accent-dark">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
             </button>
           ) : (
-            <button type="button" aria-label="Record audio" className="p-3 rounded-full bg-accent-light dark:bg-accent-dark text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent-light dark:focus-visible:ring-accent-dark">
+            <button type="button" aria-label="Record audio" className="p-3 rounded-full bg-my-message-bg-light dark:bg-my-message-bg-dark text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent-light dark:focus-visible:ring-accent-dark">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 11a7 7 0 01-14 0m7 6v4m0 0H9m4 0h2M5 11a7 7 0 0114 0" /></svg>
             </button>
           )}
