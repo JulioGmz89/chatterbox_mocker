@@ -19,10 +19,18 @@ export const ChatProvider = ({ children }) => {
   const [data, setData] = useState(() => {
     try {
       const localData = localStorage.getItem('chat-data');
-      return localData ? JSON.parse(localData) : initialData;
+      const parsedData = localData ? JSON.parse(localData) : initialData;
+      if (!parsedData.user) {
+        parsedData.user = { id: 'me', name: 'Me', profilePicture: 'https://robohash.org/me.png?size=150x150' };
+      }
+      return parsedData;
     } catch (error) {
       console.error('Failed to parse localStorage data:', error);
-      return initialData;
+      const dataWithUser = { ...initialData };
+      if (!dataWithUser.user) {
+        dataWithUser.user = { id: 'me', name: 'Me', profilePicture: 'https://robohash.org/me.png?size=150x150' };
+      }
+      return dataWithUser;
     }
   });
 
@@ -129,7 +137,17 @@ export const ChatProvider = ({ children }) => {
   };
 
   const getSender = (senderId) => {
+    if (senderId === 'me') {
+      return data.user;
+    }
     return data.contacts.find(c => c.id === senderId);
+  };
+
+  const updateUser = (updatedUserData) => {
+    setData(prevData => ({
+      ...prevData,
+      user: { ...prevData.user, ...updatedUserData }
+    }));
   };
 
   const updateChatBackground = (chatId, backgroundUrl) => {
@@ -146,9 +164,10 @@ export const ChatProvider = ({ children }) => {
     setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
   };
 
-  const { contacts, groups, conversations, chatBackgrounds } = data;
+  const { user, contacts, groups, conversations, chatBackgrounds } = data;
 
   const value = {
+    user,
     theme,
     toggleTheme,
     contacts: contacts || [],
@@ -161,6 +180,7 @@ export const ChatProvider = ({ children }) => {
     addGroup,
     updateGroup,
     deleteGroup,
+    updateUser,
     sendMessage,
     updateMessageTimestamp,
     getSender,
