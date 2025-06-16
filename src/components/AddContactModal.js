@@ -17,7 +17,7 @@ const AddContactModal = ({ onSave, onClose }) => {
       phoneNumber,
       about,
       // Use a random avatar if no picture is provided
-      profilePicture: profilePicture || `https://i.pravatar.cc/150?u=${Date.now()}`,
+      profilePicture: profilePicture || `https://picsum.photos/seed/${Date.now()}/150/150`,
       status: 'Online', // Default status
     });
   };
