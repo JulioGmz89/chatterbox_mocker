@@ -28,6 +28,7 @@ const ChatView = ({ chat, onBack }) => {
   const [message, setMessage] = useState('');
   const [currentSender, setCurrentSender] = useState('me');
   const [defaultBgDataUrl, setDefaultBgDataUrl] = useState('');
+  const [isBgLoaded, setIsBgLoaded] = useState(false);
 
   const DEFAULT_BG_URL = 'https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png';
 
@@ -47,9 +48,15 @@ const ChatView = ({ chat, onBack }) => {
         return url;
       }
     };
-    
-    if (!chatBackgrounds[chat.id]) {
-        toDataURL(DEFAULT_BG_URL).then(dataUrl => setDefaultBgDataUrl(dataUrl));
+
+    if (chatBackgrounds[chat.id]) {
+      setIsBgLoaded(true);
+    } else {
+      setIsBgLoaded(false);
+      toDataURL(DEFAULT_BG_URL).then(dataUrl => {
+        setDefaultBgDataUrl(dataUrl);
+        setIsBgLoaded(true);
+      });
     }
   }, [chat.id, chatBackgrounds]);
 
@@ -160,10 +167,12 @@ const ChatView = ({ chat, onBack }) => {
               <h2 className="font-semibold text-lg text-gray-900 dark:text-white">{chat.name}</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400">{isGroupChat ? `${chat.members.length} members` : (chat.status || 'online')}</p>
             </div>
-            <div className="ml-auto flex items-center space-x-2 text-gray-800 dark:text-white">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.55a1 1 0 01.55.89V19.1a1 1 0 01-1.55.83L15 16.5l-3.45 2.43a1 1 0 01-1.55-.83v-8.22a1 1 0 01.55-.89L10 10l5 .01z" /></svg>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498A1 1 0 0119 15.72V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01" /></svg>
+            <div className="ml-auto flex items-center space-x-4 text-gray-800 dark:text-white">
+              <div className="flex items-center space-x-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.55a1 1 0 011.45.89v2.22a1 1 0 01-1.45.89L15 12.22V10zM4 6a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498A1 1 0 0119 15.72V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
+              </div>
             </div>
           </header>
         ) : (
@@ -176,28 +185,43 @@ const ChatView = ({ chat, onBack }) => {
               <h2 className="font-semibold text-lg text-gray-900 dark:text-white">{chat.name}</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400">{isGroupChat ? `${chat.members.length} members` : (chat.status || 'online')}</p>
             </div>
-            <div className="ml-auto flex items-center space-x-2">
-              {!isGroupChat && (
-                <button onClick={() => setEditModalOpen(true)} className="p-2 rounded-full text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 5.232z" /></svg>
-                </button>
-              )}
-              <button className="p-2 rounded-full text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.55a1 1 0 01.55.89V19.1a1 1 0 01-1.55.83L15 16.5l-3.45 2.43a1 1 0 01-1.55-.83v-8.22a1 1 0 01.55-.89L10 10l5 .01z" /></svg>
+            <div className="ml-auto flex items-center space-x-2 text-gray-800 dark:text-white">
+              <button className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.55a1 1 0 011.45.89v2.22a1 1 0 01-1.45.89L15 12.22V10zM4 6a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" /></svg>
               </button>
-              <button className="p-2 rounded-full text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+              <button className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498A1 1 0 0119 15.72V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
               </button>
               <div className="relative">
-                <button onClick={() => setMenuOpen(!isMenuOpen)} className="p-2 rounded-full text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01" /></svg>
+                <button onClick={() => setMenuOpen(!isMenuOpen)} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
                 </button>
                 {isMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10">
-                    <button onClick={handleExport} className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Export Chat</button>
-                    <button onClick={handleChangeBackground} className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Change Background</button>
-                    <button onClick={toggleTheme} className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Toggle Theme</button>
-                    <button onClick={handleDelete} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700">Delete {isGroupChat ? 'Group' : 'Chat'}</button>
+                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 ring-1 ring-black ring-opacity-5">
+                    <div className="py-1">
+                      {!isGroupChat && (
+                        <button onClick={() => { setEditModalOpen(true); setMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                          Edit Contact
+                        </button>
+                      )}
+                      <button onClick={() => { handleChangeBackground(); setMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                        Change Background
+                      </button>
+                      <button
+                        onClick={() => { handleExport(); setMenuOpen(false); }}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={!isBgLoaded}
+                      >
+                        Export Chat
+                      </button>
+                      <button onClick={() => { toggleTheme(); setMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                        Toggle Dark Mode
+                      </button>
+                      <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                      <button onClick={() => { handleDelete(); setMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700">
+                        Delete {isGroupChat ? 'Group' : 'Chat'}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
