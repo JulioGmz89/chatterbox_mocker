@@ -3,7 +3,7 @@ export const initialData = {
     {
       id: 'contact-1',
       name: 'Jane Doe',
-      profilePicture: 'https://i.pravatar.cc/150?u=jane_doe',
+      profilePicture: 'https://picsum.photos/seed/jane_doe/150/150',
       status: 'Online',
       about: 'Hey there! I am using WhatsApp.',
       phoneNumber: '+1 123-456-7890',
@@ -11,7 +11,7 @@ export const initialData = {
     {
       id: 'contact-2',
       name: 'John Smith',
-      profilePicture: 'https://i.pravatar.cc/150?u=john_smith',
+      profilePicture: 'https://picsum.photos/seed/john_smith/150/150',
       status: 'Typing...',
       about: 'At the movies.',
       phoneNumber: '+1 987-654-3210',
@@ -21,7 +21,7 @@ export const initialData = {
     {
       id: 'group-1',
       name: 'Project Team',
-      groupIcon: 'https://i.pravatar.cc/150?u=project_team',
+      groupIcon: 'https://picsum.photos/seed/project_team/150/150',
       description: 'Discussion about the new project.',
       creationDate: '2025-06-15T10:00:00Z',
       members: ['contact-1', 'contact-2'], // IDs of contacts

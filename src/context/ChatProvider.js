@@ -41,6 +41,22 @@ export const ChatProvider = ({ children }) => {
     }));
   };
 
+  const updateMessageTimestamp = (chatId, messageId, newTimestamp) => {
+    setData(prevData => {
+      const updatedConversation = prevData.conversations[chatId].map(msg =>
+        msg.id === messageId ? { ...msg, timestamp: newTimestamp } : msg
+      );
+
+      return {
+        ...prevData,
+        conversations: {
+          ...prevData.conversations,
+          [chatId]: updatedConversation,
+        },
+      };
+    });
+  };
+
   const addContact = (newContact) => {
     setData(prevData => ({
       ...prevData,
@@ -55,6 +71,7 @@ export const ChatProvider = ({ children }) => {
     ...data,
     addContact,
     sendMessage,
+    updateMessageTimestamp,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

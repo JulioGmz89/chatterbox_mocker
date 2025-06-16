@@ -1,27 +1,33 @@
 import React, { useState } from 'react';
-import ContactList from './components/ContactList';
+import ChatList from './components/ChatList';
 import AddContactModal from './components/AddContactModal';
 import ChatView from './components/ChatView';
 import { useChat } from './context/ChatProvider';
 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeChatId, setActiveChatId] = useState(null);
-  const { contacts, conversations, addContact } = useChat();
+    const [activeChat, setActiveChat] = useState(null);
+      const { conversations, addContact } = useChat();
 
-  const handleSaveContact = (newContact) => {
+    const handleSaveContact = (newContact) => {
     addContact(newContact);
     setIsModalOpen(false);
   };
 
-  const activeContact = contacts.find(c => c.id === activeChatId);
-  const activeConversation = conversations[activeChatId] || [];
+  const handleResetData = () => {
+    if (window.confirm('Are you sure you want to reset all data? This cannot be undone.')) {
+      localStorage.removeItem('chat-data');
+      window.location.reload();
+    }
+  };
+
+    const activeConversation = activeChat ? conversations[activeChat.id] || [] : [];
 
   return (
     <div className="bg-gray-900 text-white min-h-screen flex justify-center items-center p-4">
       <div className="w-full max-w-md h-[90vh] bg-gray-800 rounded-2xl shadow-2xl flex flex-col">
-        {activeChatId ? (
-          <ChatView contact={activeContact} conversation={activeConversation} onBack={() => setActiveChatId(null)} />
+                {activeChat ? (
+          <ChatView chat={activeChat} conversation={activeConversation} onBack={() => setActiveChat(null)} />
         ) : (
           <div className="p-4">
             <header className="mb-6 text-center">
@@ -30,12 +36,19 @@ function App() {
             </header>
             <div className="mb-4">
               <button 
-                  onClick={() => setIsModalOpen(true)}
-                  className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                  onClick={() => setIsModalOpen(true)} 
+                  className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full transition w-full"
+                >
                   Add New Contact
               </button>
+              <button 
+                  onClick={handleResetData} 
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full transition w-full mt-2"
+                >
+                  Reset Data
+              </button>
             </div>
-            <ContactList onSelectContact={setActiveChatId} />
+                        <ChatList onSelectChat={setActiveChat} />
           </div>
         )}
 
