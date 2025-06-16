@@ -37,7 +37,7 @@ const EditGroupModal = ({ isOpen, onClose, group, onSave }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50" onClick={onClose}>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4" onClick={onClose}>
       <div className="bg-primary-bg-light dark:bg-primary-bg-dark p-6 rounded-lg shadow-xl w-full max-w-md" onClick={e => e.stopPropagation()}>
         <h2 className="text-2xl font-bold mb-4 text-primary-text-light dark:text-primary-text-dark">Edit Group</h2>
         <input

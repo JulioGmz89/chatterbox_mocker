@@ -40,7 +40,7 @@ function App() {
   const activeConversation = activeChat ? conversations[activeChat.id] || [] : [];
 
   return (
-    <div className="h-screen w-full flex overflow-hidden">
+    <div className="h-screen w-full relative md:flex overflow-hidden">
       {/* Left Pane - Chat List */}
       <div className={ `
         w-full md:w-96 flex-shrink-0 bg-secondary-bg-light dark:bg-secondary-bg-dark border-r border-gray-200 dark:border-gray-700 flex flex-col
