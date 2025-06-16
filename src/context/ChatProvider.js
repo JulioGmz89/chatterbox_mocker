@@ -30,7 +30,7 @@ export const ChatProvider = ({ children }) => {
     try {
       localStorage.setItem('chat-data', JSON.stringify(data));
     } catch (error) {
-            console.error('Failed to save data to localStorage:', error);
+      console.error('Failed to save data to localStorage:', error);
     }
   }, [data]);
 
@@ -43,10 +43,10 @@ export const ChatProvider = ({ children }) => {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-    const sendMessage = (chatId, messageText, senderId) => {
+  const sendMessage = (chatId, messageText, senderId) => {
     const newMessage = {
       id: `msg-${Date.now()}`,
-            sender: senderId,
+      sender: senderId,
       text: messageText,
       timestamp: new Date().toISOString(),
     };
@@ -60,26 +60,35 @@ export const ChatProvider = ({ children }) => {
     }));
   };
 
-      const updateContact = (updatedContact) => {
+  const updateContact = (updatedContact) => {
     setData(prevData => ({
       ...prevData,
       contacts: prevData.contacts.map(c => c.id === updatedContact.id ? updatedContact : c),
     }));
   };
 
-  const deleteChat = (chatId) => {
-    setData(prevData => {
-      const newContacts = prevData.contacts.filter(c => c.id !== chatId);
-      const newGroups = prevData.groups.filter(g => g.id !== chatId);
-      const newConversations = { ...prevData.conversations };
-      delete newConversations[chatId];
+  const updateGroup = (updatedGroup) => {
+    setData(prevData => ({
+      ...prevData,
+      groups: prevData.groups.map(g => g.id === updatedGroup.id ? updatedGroup : g),
+    }));
+  };
 
-      return {
-        ...prevData,
-        contacts: newContacts,
-        groups: newGroups,
-        conversations: newConversations,
-      };
+  const deleteContact = (contactId) => {
+    setData(prevData => {
+      const newContacts = prevData.contacts.filter(c => c.id !== contactId);
+      const newConversations = { ...prevData.conversations };
+      delete newConversations[contactId];
+      return { ...prevData, contacts: newContacts, conversations: newConversations };
+    });
+  };
+
+  const deleteGroup = (groupId) => {
+    setData(prevData => {
+      const newGroups = prevData.groups.filter(g => g.id !== groupId);
+      const newConversations = { ...prevData.conversations };
+      delete newConversations[groupId];
+      return { ...prevData, groups: newGroups, conversations: newConversations };
     });
   };
 
@@ -109,19 +118,53 @@ export const ChatProvider = ({ children }) => {
     }));
   };
 
-    const toggleTheme = () => {
+  const addGroup = (newGroup) => {
+    setData(prevData => ({
+      ...prevData,
+      groups: [
+        ...prevData.groups,
+        { ...newGroup, id: `group-${Date.now()}`, members: newGroup.members || [], isGroup: true },
+      ],
+    }));
+  };
+
+  const getSender = (senderId) => {
+    return data.contacts.find(c => c.id === senderId);
+  };
+
+  const updateChatBackground = (chatId, backgroundUrl) => {
+    setData(prevData => ({
+      ...prevData,
+      chatBackgrounds: {
+        ...(prevData.chatBackgrounds || {}),
+        [chatId]: backgroundUrl,
+      },
+    }));
+  };
+
+  const toggleTheme = () => {
     setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
   };
+
+  const { contacts, groups, conversations, chatBackgrounds } = data;
 
   const value = {
     theme,
     toggleTheme,
-    ...data,
+    contacts: contacts || [],
+    groups: groups || [],
+    conversations: conversations || {},
+    chatBackgrounds: chatBackgrounds || {},
     addContact,
+    updateContact,
+    deleteContact,
+    addGroup,
+    updateGroup,
+    deleteGroup,
     sendMessage,
     updateMessageTimestamp,
-    deleteChat,
-    updateContact: updateContact, // Corrected here
+    getSender,
+    updateChatBackground,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
